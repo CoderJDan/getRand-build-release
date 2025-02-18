@@ -1,7 +1,3 @@
-![스크린샷 2025-02-14 180825](https://github.com/user-attachments/assets/924978a4-6ac5-4342-85aa-7e77a0011c61)# 📌 미미-노트북 대여 시스템: 빌드 및 배포 문서
-
-![Mimi Laptop Rental](https://img.shields.io/badge/Mimi-Laptop%20Rental-blue.svg)
-
 ## 📝 개요
 
 getRand() {}; 는 MSA를 적용한 데이터 조회 및 통계 플랫폼입니다. 해당 플랫폼의 CI/CD를 구현하여 실제 서비스 배포와 같은 환경을 구축하였습니다.
@@ -34,12 +30,10 @@ getRand() {}; 는 MSA를 적용한 데이터 조회 및 통계 플랫폼입니�
 ### Git Push
 ![ngrok](https://github.com/CoderJDan/getRand-build-release/blob/d8ba0a444c8859f52e576f33ba0286ff21dd4ea1/build_release_screenshot/ngrok.png?raw=true)
 
-
-![스크린샷 2025-02-14 190131](https://github.com/user-attachments/assets/928b4f61-4284-4ee7-b839-9b6c99bfc794)
+![webhook](https://github.com/CoderJDan/getRand-build-release/blob/master/build_release_screenshot/webhook.png?raw=true)
 
 
 ### 📂 Dockerfile을 이용한 빌드
-![스크린샷 2025-02-14 182150](https://github.com/user-attachments/assets/c8cb543f-c897-46ed-8608-9926e9cc5e47)
 
 ```Dockerfile
 # Build Stage
@@ -77,39 +71,47 @@ ENTRYPOINT ["java", "-jar", "/myapp/getrand.jar"]
 
 ## ☸️ Kubernetes 배포
 
-### 📜 배포 리소스 정의 (`mimi-app-service.yaml`)
+### 📜 배포 리소스 정의 (`getrand-datacollection-deploy.yaml, getrand-datacollection-service.yaml`)
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rental
-  namespace: mimiproject
+  name: datacollectionservice
+  namespace: getrand
+  labels:
+    service: datacollectionservice
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      project: mimiuser
+      service: datacollectionservice
   template:
     metadata:
       labels:
-        project: mimiuser
+        service: datacollectionservice
     spec:
       containers:
-        - name: rental
-          image: daul0519/mimiuser:v1.3
+        - name: datacollection
+          image: jangdaniel/getrand-datacollection-service:v1.0.5
           ports:
-            - containerPort: 5678
-          env:
-            - name: DB_HOST
-              value: "mysql-service"
-            - name: DB_NAME
-              value: "mimi"
-            - name: DB_USER
-              value: "mytest"
-            - name: DB_PASSWORD
-              value: "1234"
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://10.104.200.22:3306/mimi"
+            - containerPort: 5003
+```
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: datacollectionservice
+  namespace: getrand
+  labels:
+    service: datacollectionservice
+spec:
+  selector:
+    service: datacollectionservice
+  ports:
+    - port: 5003
+      targetPort: 5003
+  type: ClusterIP
 ```
 
 ### 🌐 Ingress 설정 (`ingress-setting.yaml`)
@@ -118,7 +120,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: ingress-setting
-  namespace: mimiproject
+  namespace: getrand
 spec:
   ingressClassName: nginx
   rules:
@@ -175,9 +177,7 @@ pipeline{
 
 ---
 ## 🔄ArgoCD : 배포 자동화 
-![스크린샷 2025-02-14 180825](https://github.com/user-attachments/assets/03397350-fa81-4741-b460-5172f36a82d7)
-![스크린샷 2025-02-14 184412](https://github.com/user-attachments/assets/c5e636de-6e44-44d5-8ebc-698370dfe73b)
-![스크린샷 2025-02-14 183025](https://github.com/user-attachments/assets/5f2536fc-886b-408e-b440-9f9d4ce3fd52)
+![argocd](https://github.com/CoderJDan/getRand-build-release/blob/master/build_release_screenshot/argocd.png?raw=true)
 
 
 ---
@@ -233,21 +233,10 @@ jobs:
 
 ---
 
-## ✅ 실행 및 검증 방법
-```sh
-# Kubernetes 배포
-kubectl apply -f mimi-app-service.yaml
-kubectl apply -f ingress-setting.yaml
-
-# 배포 확인
-kubectl get pods -n mimiproject
-kubectl get svc -n mimiproject
-```
-
 ---
 ## 💻 전체 흐름도
 
-![단락 텍스트](https://github.com/user-attachments/assets/bd473892-2ddf-4b31-995a-7009f9a9ab1c)
+![process](https://github.com/CoderJDan/getRand-build-release/blob/master/build_release_screenshot/process.png?raw=true)
 
 ---
 ---
@@ -255,32 +244,19 @@ kubectl get svc -n mimiproject
 ## ✅ 실행 및 검증 방법
 ```sh
 # Kubernetes 배포
-kubectl apply -f mimi-app-service.yaml
+kubectl apply -f getrand-datacollection-deploy.yaml
+kubectl apply -f getrand-datacollection-service.yaml
 kubectl apply -f ingress-setting.yaml
 
 # 배포 확인
-kubectl get pods -n mimiproject
-kubectl get svc -n mimiproject
+kubectl get pods -n getrand
+kubectl get svc -n getrand
 ```
 
----
 
-## 🔧 트러블슈팅
-### 🚨 빌드 오류 해결
-- `gradlew: Permission denied`: `chmod +x gradlew` 실행 후 다시 빌드
-- `docker: command not found`: Docker 설치 및 실행 여부 확인
-
-### ⚠️ 배포 오류 해결
-- Pod CrashLoopBackOff 발생 시 `kubectl describe pod <pod-name>`로 로그 확인
-- `kubectl logs <pod-name>` 명령어로 오류 메시지 분석
-
----
 
 ## 🎯 프로젝트 정보
-📌 **Users레포지토리:** [GitHub - 미미팀](https://github.com/05Daul/mimiUsers)
-📌 **Rental레포지토리:** [GitHub - 미미팀](https://github.com/05Daul/mimiRental)
-📌 **Equipment레포지토리:** [GitHub - 미미팀](https://github.com/05Daul/mimiEquipment)
-📌 **Menifest레포지토리:** [GitHub - 미미팀](https://github.com/05Daul/mimiyaml)  
-📌 **Docker Hub:** [Mimi-User](https://hub.docker.com/r/daul0519/mimi-user)  
-📌 **문의:** elre519@네이버  
+📌 **Data Collection 레포지토리:** [getRand_datacollectionservice](https://github.com/CoderJDan/getRand_datacollectionservice.git)
+📌 **User 레포지토리:** [getRand_userservice](https://github.com/CoderJDan/getRand_userservice.git)
+📌 **Analystic 레포지토리:** [getRand_analysticservice](https://github.com/CoderJDan/getRand_analysticservice.git)
 
