@@ -32,7 +32,7 @@ getRand() {}; 는 MSA를 적용한 데이터 조회 및 통계 플랫폼입니�
 
 ## 🏗️ 빌드 프로세스
 ### Git Push
-![스크린샷 2025-02-14 190013](https://github.com/build_release_screenshot/jenkins_github_push_trigger.png)
+![ngrok](https://github.com/CoderJDan/getRand-build-release/blob/d8ba0a444c8859f52e576f33ba0286ff21dd4ea1/build_release_screenshot/ngrok.png?raw=true)
 
 
 ![스크린샷 2025-02-14 190131](https://github.com/user-attachments/assets/928b4f61-4284-4ee7-b839-9b6c99bfc794)
